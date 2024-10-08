@@ -106,7 +106,7 @@
             const data = forecast.data.data
             const map = new Map<number, [number, number]>()
             for (var i = 0 ; i < data.icon.length; i++){
-                map.set(data.origTs[i], [data.icon[i], data.moonPhase[i]])
+                map.set(data.origTs[i], [data.icon[i]])
             }
             iconByDate = map
         }).catch((reason) => {
@@ -135,10 +135,7 @@
     $: dial?.$set({
         sunrisePos: sunrisePos,
         sunsetPos: sunsetPos,
-        moonrisePos: moonrisePos,
-        moonsetPos: moonsetPos,
         sunPos: sunPos,
-        moonPos: moonPos
     });
 
     function updateMarker(){
@@ -154,10 +151,7 @@
                     props: {
                         sunrisePos: sunrisePos,
                         sunsetPos: sunsetPos,
-                        moonrisePos: moonrisePos,
-                        moonsetPos: moonsetPos,
                         sunPos: sunPos,
-                        moonPos: moonPos
                     }
                 })
             }
@@ -173,22 +167,6 @@
     $: sunsetPos = !isNaN(times.sunset.getTime()) ? SunCalc.getPosition(times.sunset, pos.lat, pos.lon) : undefined
     $: noonAltitude = SunCalc.getPosition(times.solarNoon, pos.lat, pos.lon).altitude
 
-    // get moon directions
-    $: nextNadir = new Date(times.nadir.getTime() + 24 * 60 * 60 * 1000);
-
-    $: moonTimes1 = SunCalc.getMoonTimes(times.nadir, pos.lat, pos.lon) // moon times of first day
-    $: moonTimes2 = SunCalc.getMoonTimes(nextNadir, pos.lat, pos.lon) // moon times of second day
-
-    $: moonTimes = {
-        rise: (moonTimes1.rise >= times.nadir) ? moonTimes1.rise : (moonTimes2.rise <= nextNadir ? moonTimes2.rise : undefined),
-        set: (moonTimes1.set >= times.nadir) ? moonTimes1.set : (moonTimes2.set <= nextNadir ? moonTimes2.set : undefined)
-    }
-
-    $: moonPos = SunCalc.getMoonPosition(time, pos.lat, pos.lon)
-    $: moonrisePos = moonTimes.rise ? SunCalc.getMoonPosition(moonTimes.rise, pos.lat, pos.lon) : undefined
-    $: moonsetPos = moonTimes.set ? SunCalc.getMoonPosition(moonTimes.set, pos.lat, pos.lon) : undefined
-
-    $: moonIllumination = SunCalc.getMoonIllumination(time)
 
     export const onopen = (params?: Partial<LatLon> ) => {
         if (setPosition(params)) return
@@ -242,10 +220,9 @@
     <div class="current-time" id=current_time>{ time_format(time, timezone, zuluMode) }</div>
     <div class="infoboxes">
         <CurrentPosInfobox title="Sun" timezone={timezone} zuluMode={zuluMode} rise={times.sunrise} set={times.sunset} pos={sunPos} />
-        <CurrentPosInfobox isMoon title="Moon" timezone={timezone} zuluMode={zuluMode} rise={moonTimes.rise} set={moonTimes.set} pos={moonPos} moonIlumination={moonIllumination} />
     </div>
-    <AltitudeDiagram nadir={times.nadir.getTime()} pos={pos} time={time} moonAltitude={moonPos.altitude} sunAltitude={sunPos.altitude} />
-    <DesktopTimeline time={time} timezone={timezone} zuluMode={zuluMode} times={times} moonTimes={moonTimes} noonDaytime={noonAltitude > 0} iconByDate={iconByDate}/>
+    <AltitudeDiagram nadir={times.nadir.getTime()} pos={pos} time={time} sunAltitude={sunPos.altitude} />
+    <DesktopTimeline time={time} timezone={timezone} zuluMode={zuluMode} times={times} noonDaytime={noonAltitude > 0} iconByDate={iconByDate}/>
     <Footer />
 </section>
 {:else}
@@ -255,12 +232,11 @@
         {#if active_mobile_tab === "current"}
             <div class="infoboxes">
                 <CurrentPosInfobox title="Sun" timezone={timezone} zuluMode={zuluMode} rise={times.sunrise} set={times.sunset} pos={sunPos} />
-                <CurrentPosInfobox isMoon title="Moon" timezone={timezone} zuluMode={zuluMode} rise={moonTimes.rise} set={moonTimes.set} pos={moonPos} moonIlumination={moonIllumination} />
             </div>
         {:else if active_mobile_tab === "diagram"}
-            <AltitudeDiagram nadir={times.nadir.getTime()} pos={pos} time={time} moonAltitude={moonPos.altitude} sunAltitude={sunPos.altitude} />
+            <AltitudeDiagram nadir={times.nadir.getTime()} pos={pos} time={time} sunAltitude={sunPos.altitude} />
         {:else if active_mobile_tab === "timeline"}
-            <MobileScrolledTimeline time={time} timezone={timezone} zuluMode={zuluMode} times={times} moonTimes={moonTimes} noonDaytime={noonAltitude > 0} iconByDate={iconByDate}/>
+            <MobileScrolledTimeline time={time} timezone={timezone} zuluMode={zuluMode} times={times} noonDaytime={noonAltitude > 0} iconByDate={iconByDate}/>
         {:else}
             <Footer />
         {/if}
